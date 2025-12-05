@@ -518,5 +518,5 @@ class Booklet:
                 for obj in page:
                     obj.write(pdf)
 
-        pdf.output(self.output_file, 'F')
+        pdf.output(self.output_file)
         return
