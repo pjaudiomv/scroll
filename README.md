@@ -2,7 +2,7 @@
 In its present form, scroll is a python-based command line utility for generating meeting list PDFs from [aggregator](https://github.com/bmlt-enabled/aggregator). In the future, scroll will be a full-featured website for generating meeting list PDFs.
 
 ## Installation
-Scroll requires Python 3, [requests](http://docs.python-requests.org/en/master/), and [pyfpdf](https://github.com/reingart/pyfpdf).
+Scroll requires Python 3, [requests](http://docs.python-requests.org/en/main/), and [pyfpdf](https://github.com/reingart/pyfpdf).
 
 1. [Install python](https://www.python.org/downloads/)
 2. [Install pip](https://pip.pypa.io/en/stable/installing/)
@@ -13,7 +13,7 @@ No effort has been made to create a proper pypi package for scroll, so you'll ne
  
 ## Usage
 ```
-[jbraswell@localhost src]$ python3 scroll.py --help
+[pj@localhost src]$ python3 scroll.py --help
 usage: scroll [-h] [--recursive] [--main-header-field {weekday,city}]
               [--second-header-field {weekday,city}] [--bookletize]
               [--time-column-width TIME_COLUMN_WIDTH]
@@ -64,23 +64,23 @@ optional arguments:
 #### Example 1
 Generate test.pdf, targeting the letter paper size, for service bodies 753 and 751
 ```
-[jbraswell@localhost src]$ python3 scroll.py 753,751 letter test.pdf
+[pjaudiomv@localhost src]$ python3 scroll.py 753,751 letter test.pdf
 ```
-Output: [test.pdf](https://github.com/jbraswell/scroll/blob/master/example_1.pdf)
+Output: [test.pdf](https://github.com/pjaudiomv/scroll/blob/main/example_1.pdf)
 
 #### Example 2
 Generate test.pdf, targeting the letter paper size, for service body 762 and its children
 ```
 $ python3 scroll.py 762 letter test.pdf --recursive
 ```
-Output: [test.pdf](https://github.com/jbraswell/scroll/blob/master/example_2.pdf)
+Output: [test.pdf](https://github.com/pjaudiomv/scroll/blob/main/example_2.pdf)
 
 #### Example 3
 Generate test.pdf, targeting the letter paper size, for service bodies 753 and 751, customizing the meeting font
 ```
 $ python3 scroll.py 753,751 letter test.pdf --meeting-font=times
 ```
-Output: [test.pdf](https://github.com/jbraswell/scroll/blob/master/example_3.pdf)
+Output: [test.pdf](https://github.com/pjaudiomv/scroll/blob/main/example_3.pdf)
 
 #### Example 4
 Generate test.pdf, targeting the letter paper size, for service body 762 and its children, adding secondary 'city' headers, changing font sizes to 8, changing the width of the time and duration columns
@@ -94,7 +94,7 @@ $ python3 scroll.py 762 letter test.pdf \
     --time-column-width=12 \
     --duration-column-width=10
 ```
-Output: [test.pdf](https://github.com/jbraswell/scroll/blob/master/example_4.pdf)
+Output: [test.pdf](https://github.com/pjaudiomv/scroll/blob/main/example_4.pdf)
 
 #### Example 5
 Generate test.pdf, same as previous, but bookletized
@@ -109,4 +109,4 @@ $ python3 scroll.py 762 letter test.pdf \
     --time-column-width=12 \
     --duration-column-width=10
 ```
-Output: [test.pdf](https://github.com/jbraswell/scroll/blob/master/example_5.pdf)
+Output: [test.pdf](https://github.com/pjaudiomv/scroll/blob/main/example_5.pdf)
