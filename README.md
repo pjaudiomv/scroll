@@ -62,30 +62,30 @@ optional arguments:
 
 ## Examples
 #### Example 1
-Generate test.pdf, targeting the letter paper size, for service bodies 753 and 751
+Generate test.pdf, targeting the letter paper size, for service bodies 2466,1207 and 1208
 ```
-[pjaudiomv@localhost src]$ python3 scroll.py 753,751 letter test.pdf
+[pjaudiomv@localhost src]$ python3 scroll.py 2466,1207,1208 letter test.pdf
 ```
 Output: [test.pdf](https://github.com/pjaudiomv/scroll/blob/main/example_1.pdf)
 
 #### Example 2
-Generate test.pdf, targeting the letter paper size, for service body 762 and its children
+Generate test.pdf, targeting the letter paper size, for service body 1215 and its children
 ```
-$ python3 scroll.py 762 letter test.pdf --recursive
+$ python3 scroll.py 1215 letter test.pdf --recursive
 ```
 Output: [test.pdf](https://github.com/pjaudiomv/scroll/blob/main/example_2.pdf)
 
 #### Example 3
-Generate test.pdf, targeting the letter paper size, for service bodies 753 and 751, customizing the meeting font
+Generate test.pdf, targeting the letter paper size, for service bodies 2466,1207 and 1208, customizing the meeting font
 ```
-$ python3 scroll.py 753,751 letter test.pdf --meeting-font=times
+$ python3 scroll.py 2466,1207,1208 letter test.pdf --meeting-font=times
 ```
 Output: [test.pdf](https://github.com/pjaudiomv/scroll/blob/main/example_3.pdf)
 
 #### Example 4
-Generate test.pdf, targeting the letter paper size, for service body 762 and its children, adding secondary 'city' headers, changing font sizes to 8, changing the width of the time and duration columns
+Generate test.pdf, targeting the letter paper size, for service body 1215 and its children, adding secondary 'city' headers, changing font sizes to 8, changing the width of the time and duration columns
 ```
-$ python3 scroll.py 762 letter test.pdf \
+$ python3 scroll.py 1215 letter test.pdf \
     --recursive \
     --main-header-field=weekday \
     --second-header-field=city \
@@ -99,7 +99,7 @@ Output: [test.pdf](https://github.com/pjaudiomv/scroll/blob/main/example_4.pdf)
 #### Example 5
 Generate test.pdf, same as previous, but bookletized
 ```
-$ python3 scroll.py 762 letter test.pdf \
+$ python3 scroll.py 1215 letter test.pdf \
     --recursive \
     --bookletize \
     --main-header-field=weekday \
