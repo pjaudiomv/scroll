@@ -25,7 +25,7 @@ def get_data(args):
         'services[]': args.service_body_ids.split(','),
         'recursive': '1' if args.recursive else '0'
     }, doseq=True)
-    url = 'https://tomato.na-bmlt.org/main_server/client_interface/json/?' + qs
+    url = 'https://aggregator.bmltenabled.org/main_server/client_interface/json/?' + qs
 
     headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:52.0) Gecko/20100101 Firefox/52.0 +scroll'}
     response = requests.get(url, headers=headers)
@@ -68,7 +68,7 @@ def main():
     parser.add_argument(
         'service_body_ids',
         help='Comma-separated list of service body ids. Scroll will retrieve the meetings for these service bodies '
-             'from tomato'
+             'from aggregator'
     )
     parser.add_argument(
         'paper_size', choices=Booklet.PAPER_SIZES.keys(),
