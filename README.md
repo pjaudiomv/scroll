@@ -1,5 +1,5 @@
 # scroll
-In its present form, scroll is a python-based command line utility for generating meeting list PDFs from [aggregator](https://github.com/bmlt-enabled/aggregator). In the future, scroll will be a full-featured website for generating meeting list PDFs.
+In its present form, scroll is a Python-based command line utility for generating meeting list PDFs from [aggregator](https://github.com/bmlt-enabled/aggregator). In the future, scroll will be a full-featured website for generating meeting list PDFs.
 
 ## Installation
 Scroll requires Python 3, [requests](http://docs.python-requests.org/en/main/), and [fpdf2](https://pypi.org/project/fpdf2/).
@@ -64,7 +64,7 @@ optional arguments:
 #### Example 1
 Generate test.pdf, targeting the letter paper size, for service bodies 2466,1207 and 1208
 ```
-[pjaudiomv@localhost src]$ python3 scroll.py 2466,1207,1208 letter test.pdf
+[pj@localhost src]$ python3 scroll.py 2466,1207,1208 letter test.pdf
 ```
 Output: [test.pdf](https://github.com/pjaudiomv/scroll/blob/main/example_1.pdf)
 
