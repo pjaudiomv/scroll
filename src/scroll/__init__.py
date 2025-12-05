@@ -138,6 +138,111 @@ class PDFColumnEnd:
     pass
 
 
+class PDFCoverPage:
+    def __init__(self, service_bodies, formats, pdf_func, page_width, page_height):
+        self.service_bodies = service_bodies if service_bodies else []
+        self.formats = formats if formats else []
+        self.pdf_func = pdf_func
+        self.page_width = page_width
+        self.page_height = page_height
+    
+    def write(self, pdf):
+        """Write the cover page content."""
+        # Save original margins
+        left_margin = pdf.l_margin
+        
+        # Title
+        pdf.set_font('Arial', 'B', 24)
+        pdf.set_text_color(0, 0, 0)
+        pdf.set_xy(left_margin, 20)
+        pdf.cell(self.page_width, h=15, txt='Meeting Schedule', border=0, ln=1, align='C')
+        pdf.ln(h=5)
+        
+        # Generation date
+        from datetime import datetime
+        date_str = datetime.now().strftime('%B %d, %Y')
+        pdf.set_font('Arial', '', 12)
+        pdf.set_x(left_margin)
+        pdf.cell(self.page_width, h=8, txt='Generated: ' + date_str, border=0, ln=1, align='C')
+        pdf.ln(h=10)
+        
+        # Service bodies information
+        if self.service_bodies:
+            pdf.set_font('Arial', 'B', 14)
+            pdf.set_x(left_margin)
+            pdf.cell(self.page_width, h=8, txt='Service Bodies', border=0, ln=1, align='C')
+            pdf.ln(h=5)
+            
+            for sb in self.service_bodies:
+                pdf.set_x(left_margin)
+                pdf.set_font('Arial', 'B', 12)
+                name = sb.get('name', 'Unknown')
+                pdf.multi_cell(self.page_width, h=6, txt=name, border=0, align='C')
+                
+                pdf.set_font('Arial', '', 10)
+                
+                # Description
+                description = sb.get('description', '')
+                if description:
+                    pdf.set_x(left_margin)
+                    pdf.multi_cell(self.page_width, h=5, txt=description, border=0, align='C')
+                
+                # Website
+                url = sb.get('url', '')
+                if url:
+                    pdf.set_x(left_margin)
+                    pdf.multi_cell(self.page_width, h=5, txt='Website: ' + url, border=0, align='C')
+                
+                # Helpline
+                helpline = sb.get('helpline', '')
+                if helpline:
+                    pdf.set_x(left_margin)
+                    pdf.multi_cell(self.page_width, h=5, txt='Helpline: ' + helpline, border=0, align='C')
+                
+                pdf.ln(h=3)
+        
+        # Format legend
+        if self.formats:
+            pdf.ln(h=5)
+            pdf.set_font('Arial', 'B', 14)
+            pdf.set_x(left_margin)
+            pdf.cell(self.page_width, h=8, txt='Format Legend', border=0, ln=1, align='C')
+            pdf.ln(h=5)
+            
+            # Sort formats by key_string for easier reading
+            sorted_formats = sorted(self.formats, key=lambda f: f.get('key_string', ''))
+            
+            # Split into 3 columns
+            num_columns = 3
+            column_width = self.page_width / num_columns
+            formats_per_column = (len(sorted_formats) + num_columns - 1) // num_columns  # Round up
+            
+            pdf.set_font('Arial', '', 8)
+            start_y = pdf.get_y()
+            
+            # Render each column
+            for col in range(num_columns):
+                start_idx = col * formats_per_column
+                end_idx = min(start_idx + formats_per_column, len(sorted_formats))
+                current_y = start_y
+                
+                for fmt in sorted_formats[start_idx:end_idx]:
+                    key = fmt.get('key_string', '')
+                    name = fmt.get('name_string', '')
+                    
+                    if key and name:
+                        pdf.set_xy(left_margin + (col * column_width), current_y)
+                        pdf.set_font('Arial', 'B', 8)
+                        pdf.cell(10, h=3.5, txt=key, border=0)
+                        pdf.set_font('Arial', '', 8)
+                        pdf.cell(column_width - 10, h=3.5, txt=name, border=0)
+                        current_y += 3.5
+            
+            # Move to end of columns
+            pdf.set_xy(left_margin, pdf.get_y())
+            pdf.ln(h=2)
+
+
 class PDFMainSectionHeader:
     def __init__(self, text, pdf_func, cell_width, line_padding=1, font='Courier', font_size=12):
         self.text = text
@@ -414,7 +519,8 @@ class Booklet:
 
     def __init__(self, meetings, formats, output_file, bookletize=False, paper_size='Letter', time_column_width=None,
                  duration_column_width=None, meeting_font='Arial', meeting_font_size=10, header_font='Arial',
-                 header_font_size=10, main_header_field='weekday', second_header_field=None, include_qr_codes=True):
+                 header_font_size=10, main_header_field='weekday', second_header_field=None, include_qr_codes=True,
+                 service_bodies=None):
         self._meetings_data = meetings
         self._formats_data = formats
         self.output_file = output_file
@@ -422,6 +528,7 @@ class Booklet:
         self.time_column_width = time_column_width
         self.duration_column_width = duration_column_width
         self.include_qr_codes = include_qr_codes
+        self.service_bodies = service_bodies
         if paper_size.lower() not in self.PAPER_SIZES.keys():
             raise ValueError("Invalid paper size, valid choices are: {}".format(', '.join(self.PAPER_SIZES.keys())))
         self.paper_size = self.PAPER_SIZES[paper_size.lower()]
@@ -555,13 +662,19 @@ class Booklet:
     def write_pdf(self):
         booklet_pages = self.get_pages()
         pdf = self._get_pdf_obj()
+        effective_page_width = pdf.w - pdf.l_margin - pdf.r_margin
+        effective_page_height = pdf.h - pdf.t_margin - pdf.b_margin
 
         if self.bookletize:
             # Back and front cover
             pdf.add_page()
+            
+            # Add cover page content if service bodies are provided
+            if self.service_bodies:
+                cover_page = PDFCoverPage(self.service_bodies, self._formats_data, self._get_pdf_obj, effective_page_width, effective_page_height)
+                cover_page.write(pdf)
 
             # Write the meeting list
-            effective_page_width = pdf.w - pdf.l_margin - pdf.r_margin
             column_width = (effective_page_width / 2) - 1
             total_booklet_length = len(booklet_pages)
             last_booklet_page_blank = total_booklet_length % 2 != 0
@@ -594,6 +707,12 @@ class Booklet:
                         obj.write(pdf, x=column_width + pdf.l_margin + 2, y=last_y)
                         last_y = pdf.get_y()
         else:
+            # Add cover page for non-bookletize mode
+            if self.service_bodies:
+                pdf.add_page()
+                cover_page = PDFCoverPage(self.service_bodies, self._formats_data, self._get_pdf_obj, effective_page_width, effective_page_height)
+                cover_page.write(pdf)
+            
             for page in booklet_pages:
                 pdf.add_page()
                 for obj in page:

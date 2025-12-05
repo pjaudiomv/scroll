@@ -18,6 +18,9 @@ def get_data(args):
         ret += ',start_time'
         return ret
 
+    headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:52.0) Gecko/20100101 Firefox/52.0 +scroll'}
+    
+    # Fetch meeting data
     qs = urllib.parse.urlencode({
         'switcher': 'GetSearchResults',
         'get_used_formats': '1',
@@ -27,7 +30,6 @@ def get_data(args):
     }, doseq=True)
     url = 'https://aggregator.bmltenabled.org/main_server/client_interface/json/?' + qs
 
-    headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:52.0) Gecko/20100101 Firefox/52.0 +scroll'}
     response = requests.get(url, headers=headers)
     if response.status_code != 200:
         raise Exception('Bad status code {} from {}'.format(response.status_code, url))
@@ -35,11 +37,31 @@ def get_data(args):
         data = json.loads(response.content)
     except json.decoder.JSONDecodeError:
         raise Exception('Invalid json returned from {}'.format(url))
+    
+    meetings = data['meetings']
+    formats = data['formats']
+    service_bodies = None
+    
+    # Optionally fetch service body data for cover page
+    if args.include_cover_page:
+        qs = urllib.parse.urlencode({
+            'switcher': 'GetServiceBodies',
+            'services[]': args.service_body_ids.split(','),
+        }, doseq=True)
+        url = 'https://aggregator.bmltenabled.org/main_server/client_interface/json/?' + qs
+        
+        response = requests.get(url, headers=headers)
+        if response.status_code != 200:
+            raise Exception('Bad status code {} from {} (service bodies)'.format(response.status_code, url))
+        try:
+            service_bodies = json.loads(response.content)
+        except json.decoder.JSONDecodeError:
+            raise Exception('Invalid json returned from {} (service bodies)'.format(url))
 
-    return data['meetings'], data['formats']
+    return meetings, formats, service_bodies
 
 
-def get_pdf(args, meetings, formats):
+def get_pdf(args, meetings, formats, service_bodies=None):
     kwargs = {
         'paper_size': args.paper_size,
         'bookletize': args.bookletize,
@@ -59,10 +81,12 @@ def get_pdf(args, meetings, formats):
         kwargs['header_font_size'] = args.header_font_size
     if args.second_header_field:
         kwargs['second_header_field'] = args.second_header_field
+    # QR codes are included by default unless excluded
     kwargs['include_qr_codes'] = not args.exclude_qr_codes
+    if service_bodies:
+        kwargs['service_bodies'] = service_bodies
     booklet = Booklet(meetings, formats, args.output_file, **kwargs)
     booklet.write_pdf()
-
 
 def main():
     parser = argparse.ArgumentParser(prog='scroll')
@@ -153,6 +177,12 @@ def main():
         action='store_true',
         help='If set, QR codes will NOT be generated for virtual and hybrid meetings'
     )
+    parser.add_argument(
+        '--include-cover-page',
+        dest='include_cover_page',
+        action='store_true',
+        help='If set, a cover page with service body information and generation date will be added'
+    )
 
     args = parser.parse_args()
     for id in args.service_body_ids.split(','):
@@ -163,8 +193,8 @@ def main():
     if args.main_header_field == args.second_header_field:
         raise Exception('--main-header-field and --second-header-field cannot be the same')
 
-    meetings, formats = get_data(args)
-    get_pdf(args, meetings, formats)
+    meetings, formats, service_bodies = get_data(args)
+    get_pdf(args, meetings, formats, service_bodies)
 
     return 0
 
