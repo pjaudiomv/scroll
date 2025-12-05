@@ -2,12 +2,12 @@
 In its present form, scroll is a python-based command line utility for generating meeting list PDFs from [aggregator](https://github.com/bmlt-enabled/aggregator). In the future, scroll will be a full-featured website for generating meeting list PDFs.
 
 ## Installation
-Scroll requires Python 3, [requests](http://docs.python-requests.org/en/main/), and [pyfpdf](https://github.com/reingart/pyfpdf).
+Scroll requires Python 3, [requests](http://docs.python-requests.org/en/main/), and [fpdf2](https://pypi.org/project/fpdf2/).
 
 1. [Install python](https://www.python.org/downloads/)
 2. [Install pip](https://pip.pypa.io/en/stable/installing/)
 3. Install requests: `pip3 install requests`
-4. Install pyfpdf: `pip3 install fpdf`
+4. Install fpdf2: `pip3 install fpdf2`
 
 No effort has been made to create a proper pypi package for scroll, so you'll need to clone this repository. After cloning, you can run `scroll.py` with `python3`. See the examples below.
  
