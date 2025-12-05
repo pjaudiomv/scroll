@@ -59,6 +59,7 @@ def get_pdf(args, meetings, formats):
         kwargs['header_font_size'] = args.header_font_size
     if args.second_header_field:
         kwargs['second_header_field'] = args.second_header_field
+    kwargs['include_qr_codes'] = not args.exclude_qr_codes
     booklet = Booklet(meetings, formats, args.output_file, **kwargs)
     booklet.write_pdf()
 
@@ -145,6 +146,12 @@ def main():
         type=int,
         default=10,
         help='The font size used for headers. Defaults to 10'
+    )
+    parser.add_argument(
+        '--exclude-qr-codes',
+        dest='exclude_qr_codes',
+        action='store_true',
+        help='If set, QR codes will NOT be generated for virtual and hybrid meetings'
     )
 
     args = parser.parse_args()

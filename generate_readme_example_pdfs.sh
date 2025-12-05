@@ -9,4 +9,6 @@ echo "Generating example 4"
 python3 scroll.py 1215 letter ../example_4.pdf --recursive --main-header-field=weekday --second-header-field=city --meeting-font-size=8 --header-font-size=8 --time-column-width=12 --duration-column-width=10
 echo "Generating example 5"
 python3 scroll.py 1215 letter ../example_5.pdf --recursive --bookletize --main-header-field=weekday --second-header-field=city --meeting-font-size=8 --header-font-size=8 --time-column-width=12 --duration-column-width=10
+echo "Generating example 6"
+python3 scroll.py 1215 letter ../example_6.pdf --recursive --bookletize --main-header-field=weekday --second-header-field=city --meeting-font-size=8 --header-font-size=8 --time-column-width=12 --duration-column-width=10 --exclude-qr-codes
 cd ..

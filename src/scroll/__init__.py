@@ -1,4 +1,6 @@
 import datetime
+import io
+import qrcode
 from fpdf import FPDF
 
 
@@ -91,6 +93,10 @@ class Meeting:
         self.start_time = get_time(bmlt_object, 'start_time')
         self.duration = get_timedelta(bmlt_object, 'duration_time')
         self.weekday = get_int(bmlt_object, 'weekday_tinyint', valid_choices=[1, 2, 3, 4, 5, 6, 7])
+        self.venue_type = int(bmlt_object.get('venue_type', 1))  # 1=in-person, 2=virtual, 3=hybrid
+        self.virtual_meeting_link = self.replace_unicode_quotes(bmlt_object.get('virtual_meeting_link', ''))
+        self.virtual_meeting_additional_info = self.replace_unicode_quotes(bmlt_object.get('virtual_meeting_additional_info', ''))
+        self.phone_meeting_number = self.replace_unicode_quotes(bmlt_object.get('phone_meeting_number', ''))
         self.facility = self.replace_unicode_quotes(bmlt_object.get('location_text'))
         self.street = self.replace_unicode_quotes(bmlt_object.get('location_street'))
         self.city = self.replace_unicode_quotes(bmlt_object.get('location_municipality'))
@@ -106,6 +112,10 @@ class Meeting:
 
     @property
     def location(self):
+        # Virtual-only meetings don't show location
+        if self.venue_type == 2:
+            return ''
+
         ret = ''
         if self.facility:
             ret += self.facility
@@ -199,8 +209,10 @@ class PDFSubSectionHeader:
 
 
 class PDFMeeting:
+    QR_CODE_SIZE = 15  # mm
+
     def __init__(self, meeting, pdf_func, total_width, time_column_width=None, duration_column_width=None, font='Arial',
-                 font_size=12):
+                 font_size=12, include_qr_codes=True):
         if not isinstance(meeting, Meeting):
             raise TypeError('Expected Meeting object')
         self.pdf_func = pdf_func
@@ -210,6 +222,8 @@ class PDFMeeting:
         self.font = font
         self.font_size = font_size
         self.total_width = total_width
+        self.include_qr_codes = include_qr_codes
+        self._qr_code_image = None
 
     def get_time(self):
         ampm = 'AM'
@@ -234,6 +248,40 @@ class PDFMeeting:
         if self.meeting.formats:
             return '(' + self.meeting.formats + ')'
         return ''
+
+    def generate_qr_code(self):
+        if not self.meeting.virtual_meeting_link or self._qr_code_image is not None:
+            return self._qr_code_image
+
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=1,
+        )
+        qr.add_data(self.meeting.virtual_meeting_link)
+        qr.make(fit=True)
+
+        img = qr.make_image(fill_color="black", back_color="white")
+        img_bytes = io.BytesIO()
+        img.save(img_bytes, format='PNG')
+        img_bytes.seek(0)
+
+        self._qr_code_image = img_bytes
+        return self._qr_code_image
+
+    def has_qr_code(self):
+        """Check if meeting should display QR code (virtual or hybrid)."""
+        return self.include_qr_codes and self.meeting.venue_type in [2, 3] and self.meeting.virtual_meeting_link
+
+    def get_virtual_info(self):
+        """Get formatted virtual meeting info (additional info and phone number)."""
+        info_parts = []
+        if self.meeting.virtual_meeting_additional_info:
+            info_parts.append(self.meeting.virtual_meeting_additional_info)
+        if self.meeting.phone_meeting_number:
+            info_parts.append('Phone: ' + self.meeting.phone_meeting_number)
+        return ' | '.join(info_parts) if info_parts else ''
 
     def _get_lines(self, pdf, parts, max_line_length):
         lines = []
@@ -274,10 +322,24 @@ class PDFMeeting:
 
         pdf.set_font(self.font, '', self.font_size)
         meeting_location = self.get_location()
-        parts = meeting_location.split()
-        lines = self._get_lines(pdf, parts, self.meeting_column_width)
-        text_height = pdf.font_size
-        height += (text_height * len(lines))
+        if meeting_location:
+            parts = meeting_location.split()
+            lines = self._get_lines(pdf, parts, self.meeting_column_width)
+            text_height = pdf.font_size
+            height += (text_height * len(lines))
+
+        # Add height for virtual meeting info (for virtual/hybrid meetings)
+        virtual_info = self.get_virtual_info()
+        if virtual_info:
+            parts = virtual_info.split()
+            lines = self._get_lines(pdf, parts, self.meeting_column_width)
+            text_height = pdf.font_size
+            height += (text_height * len(lines))
+
+        # Add space for QR code if needed (virtual or hybrid)
+        if self.has_qr_code():
+            height += self.QR_CODE_SIZE + 1  # QR code + 1mm spacing
+
         return height + pdf.line_width + 2  # 1mm line break before and after line
 
     def write(self, pdf, x=None, y=None):
@@ -296,10 +358,28 @@ class PDFMeeting:
             text += ' ' + meeting_formats
         pdf.multi_cell(self.meeting_column_width, h=pdf.font_size, txt=text, border=0, align='L')
 
+        # Render location (for in-person and hybrid meetings)
         pdf.set_xy(x + self.duration_column_width + self.time_column_width, pdf.get_y())
         text = self.get_location()
-        pdf.set_font(self.font, '', self.font_size)
-        pdf.multi_cell(self.meeting_column_width, h=pdf.font_size, txt=text, border=0, align='L')
+        if text:  # Only render if there's location text
+            pdf.set_font(self.font, '', self.font_size)
+            pdf.multi_cell(self.meeting_column_width, h=pdf.font_size, txt=text, border=0, align='L')
+
+        # Render virtual meeting info (additional info and phone number)
+        pdf.set_xy(x + self.duration_column_width + self.time_column_width, pdf.get_y())
+        virtual_info = self.get_virtual_info()
+        if virtual_info:
+            pdf.set_font(self.font, '', self.font_size)
+            pdf.multi_cell(self.meeting_column_width, h=pdf.font_size, txt=virtual_info, border=0, align='L')
+
+        # Render QR code (for virtual and hybrid meetings)
+        if self.has_qr_code():
+            qr_img = self.generate_qr_code()
+            if qr_img:
+                qr_x = x + self.duration_column_width + self.time_column_width
+                qr_y = pdf.get_y()
+                pdf.image(qr_img, x=qr_x, y=qr_y, w=self.QR_CODE_SIZE, h=self.QR_CODE_SIZE)
+                pdf.set_xy(x, qr_y + self.QR_CODE_SIZE)
 
         pdf.ln(h=1)
         pdf.set_draw_color(211, 211, 211)
@@ -334,13 +414,14 @@ class Booklet:
 
     def __init__(self, meetings, formats, output_file, bookletize=False, paper_size='Letter', time_column_width=None,
                  duration_column_width=None, meeting_font='Arial', meeting_font_size=10, header_font='Arial',
-                 header_font_size=10, main_header_field='weekday', second_header_field=None):
+                 header_font_size=10, main_header_field='weekday', second_header_field=None, include_qr_codes=True):
         self._meetings_data = meetings
         self._formats_data = formats
         self.output_file = output_file
         self.bookletize = bookletize
         self.time_column_width = time_column_width
         self.duration_column_width = duration_column_width
+        self.include_qr_codes = include_qr_codes
         if paper_size.lower() not in self.PAPER_SIZES.keys():
             raise ValueError("Invalid paper size, valid choices are: {}".format(', '.join(self.PAPER_SIZES.keys())))
         self.paper_size = self.PAPER_SIZES[paper_size.lower()]
@@ -417,7 +498,7 @@ class Booklet:
             append_objs = []
             meeting = PDFMeeting(Meeting(m), self._get_pdf_obj, total_width, time_column_width=self.time_column_width,
                                  duration_column_width=self.duration_column_width, font=self.meeting_font,
-                                 font_size=self.meeting_font_size)
+                                 font_size=self.meeting_font_size, include_qr_codes=self.include_qr_codes)
             new_main_header = getattr(meeting.meeting, self.main_header_field)
             if new_main_header != prev_main_header:
                 if self.main_header_field == self.HEADER_FIELD_WEEKDAY:

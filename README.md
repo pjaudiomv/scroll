@@ -110,3 +110,19 @@ $ python3 scroll.py 1215 letter test.pdf \
     --duration-column-width=10
 ```
 Output: [test.pdf](https://github.com/pjaudiomv/scroll/blob/main/example_5.pdf)
+
+#### Example 6
+Generate test.pdf, same as previous, but doesn't generate qr codes for virtual/hybrid meetings.
+```
+$ python3 scroll.py 1215 letter test.pdf \
+    --recursive \
+    --bookletize \
+    --main-header-field=weekday \
+    --second-header-field=city \
+    --meeting-font-size=8 \
+    --header-font-size=8 \
+    --time-column-width=12 \
+    --duration-column-width=10 \
+    --exclude-qr-codes
+```
+Output: [test.pdf](https://github.com/pjaudiomv/scroll/blob/main/example_6.pdf)
